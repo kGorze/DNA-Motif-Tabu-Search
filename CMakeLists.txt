@@ -22,4 +22,8 @@ add_executable(zadanie_3
         include/DNASequence.h
         source/DNASequence.cpp
         include/FastaQualParser.h
-        source/FastaQualParser.cpp)
+        source/FastaQualParser.cpp
+        include/MotifGraphBuilder.h
+        source/MotifGraphBuilder.cpp
+        include/TabuSearchMotif.h
+        source/TabuSearchMotif.cpp)

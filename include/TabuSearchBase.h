@@ -1,10 +1,5 @@
-//
-// Created by konrad_guest on 16/12/2024.
-//
-
 #ifndef TABUSEARCHBASE_H
 #define TABUSEARCHBASE_H
-
 
 #include <vector>
 #include <unordered_set>
@@ -61,6 +56,4 @@ public:
     virtual Solution run() = 0;
 };
 
-#endif
-
-
+#endif // TABUSEARCHBASE_H

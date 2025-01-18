@@ -88,64 +88,118 @@
 #include "../include/IteratedStabulus.h"
 #include "../include/GraphGenerator.h"
 
-int main() {
-    // Example usage
-    int n = 300;
-    double a = 0.95;
-    double b = 0.35;
+#include <iostream>
+#include <vector>
+#include <string>
+#include "../include/Graph.h"
+#include "../include/GraphGenerator.h"
+#include "../include/TabuSearchDeterministic.h"
+#include "../include/TabuSearchProbabilistic.h"
+#include "../include/Stabulus.h"
+#include "../include/IteratedStabulus.h"
+#include "../include/FastaQualParser.h"
+#include "../include/MotifGraphBuilder.h"
+#include "../include/TabuSearchMotif.h"
 
-    // Generate a graph with n=100, a=0.25, b=0.75
-    Graph G = GraphGenerator::generate(n,a,b);
+int main(int argc, char** argv) {
+    // ------------------------------------------------------------
+    // Part 1: Demonstrate existing code on a random graph
+    // ------------------------------------------------------------
+    std::cout << "=== Maximum Clique via Tabu Search (Random Graph Demo) ===\n";
 
-    // Just print some information about the generated graph
+    int n = 100;
+    double a = 0.25;
+    double b = 0.75;
+    Graph G = GraphGenerator::generate(n, a, b);
+
+    // Count edges just for info
     int edgeCount = 0;
-    for (int i=0; i<n; i++) {
-        for (int j=i+1; j<n; j++) {
+    for (int i = 0; i < n; i++) {
+        for (int j = i + 1; j < n; j++) {
             if (G.adj[i][j]) edgeCount++;
         }
     }
+    std::cout << "Random graph with " << n << " vertices, " << edgeCount << " edges.\n";
 
-    std::cout << "Generated graph with " << n << " vertices and " << edgeCount << " edges.\n";
-
-    // Deterministic TS
+    // Deterministic TS for Max Clique
     {
-        TabuSearchDeterministic tsd(G,10,0,1000);
-        Solution best=tsd.run();
-        std::cout<<"Deterministic TS best clique size: "<<best.size<<"\n";
+        TabuSearchDeterministic tsd(G, 10, 5, 500);
+        Solution best = tsd.run();
+        std::cout << "Deterministic TS best clique size: " << best.size << "\n";
     }
 
-    // Probabilistic TS
+    // Probabilistic TS for Max Clique
     {
-        TabuSearchProbabilistic tsp(G,10,5,1000,2,3);
-        Solution best=tsp.run();
-        std::cout<<"Probabilistic TS best clique size: "<<best.size<<"\n";
+        TabuSearchProbabilistic tsp(G, 10, 5, 500, 2, 3);
+        Solution best = tsp.run();
+        std::cout << "Probabilistic TS best clique size: " << best.size << "\n";
     }
 
-    // Stabulus: find stable set of size k in G
-    {
-        int k=3; // guess a stable set size
-        Stabulus stab(G,k);
-        std::vector<int> stableSet;
-        bool found=stab.findStableSetOfSizeK(stableSet);
-        if(found) {
-            std::cout<<"Found stable set of size "<<k<<": ";
-            for(int v:stableSet) std::cout<<v<<" ";
-            std::cout<<"\n";
+    // ------------------------------------------------------------
+    // Part 2: Demonstrate motif-finding extension
+    // ------------------------------------------------------------
+    std::cout << "\n=== DNA Motif Finding Demo ===\n";
+    if (argc < 3) {
+        std::cout << "Usage: " << argv[0] << " <fasta_file> <qual_file>\n";
+        std::cout << "Skipping motif demo due to missing arguments.\n";
+        return 0;
+    }
+
+    // Example parameters
+    int kMin = 5;
+    int kMax = 6;
+    int qualityThreshold = 20;
+    int positionMultiplier = 10;  // for difference <= 10*k
+
+    try {
+        // 1) Parse FASTA/QUAL
+        std::string fastaFile = argv[1];
+        std::string qualFile = argv[2];
+        std::vector<DNASequence> sequences = FastaQualParser::parseFastaAndQual(fastaFile, qualFile);
+        int seqCount = (int)sequences.size();
+
+        std::cout << "Loaded " << seqCount << " sequences.\n";
+        for (int i = 0; i < seqCount; i++) {
+            std::cout << "  Seq " << i << ": " << sequences[i].name 
+                      << " (length=" << sequences[i].length() << ")\n";
+        }
+
+        // 2) Build motif graph
+        MotifGraphBuilder builder(sequences, kMin, kMax, qualityThreshold, positionMultiplier);
+        Graph motifGraph = builder.build();
+        std::cout << "Motif graph built with " << motifGraph.n << " vertices.\n";
+
+        // 3) Run specialized TabuSearch for motif
+        // Each input sequence must appear exactly once => we want a clique of size = seqCount
+        TabuSearchMotif motifSearch(motifGraph, 10, 5, 500, seqCount);
+        Solution motifSol = motifSearch.run();
+
+        // 4) Output the found motif
+        if (motifSol.size == seqCount) {
+            std::cout << "Found a motif clique of size " << motifSol.size << " (one vertex per sequence).\n";
         } else {
-            std::cout<<"No stable set of size "<<k<<" found.\n";
+            std::cout << "Found a near-solution of size " << motifSol.size
+                      << ", expected " << seqCount << " if perfect.\n";
+        }
+
+        // Print the details of each vertex in the found set
+        std::vector<int> chosenVerts;
+        for (int i = 0; i < motifGraph.n; i++) {
+            if (motifSol.inClique[i]) {
+                chosenVerts.push_back(i);
+            }
+        }
+        for (int idx : chosenVerts) {
+            const VertexData &vd = motifGraph.vertexInfo[idx];
+            std::cout << "  Sequence=" << vd.sequenceIndex
+                      << " Position=" << vd.position
+                      << " K-mer=" << vd.kmer << "\n";
         }
     }
-
-    // IteratedStabulus: tries to find max stable set by iterating k
-    {
-        IteratedStabulus istab(G,1,5); // start at k=1, allow 5 fails
-        std::vector<int> bestSet;
-        int maxSize=istab.runFindMaxStableSet(bestSet);
-        std::cout<<"Iterated-Stabulus max stable set size: "<<maxSize<<"\n";
-        std::cout<<"Stable set: ";
-        for(int v:bestSet) std::cout<<v<<" ";
-        std::cout<<"\n";
+    catch (const std::exception &ex) {
+        std::cerr << "ERROR in motif-finding demo: " << ex.what() << "\n";
     }
 
     return 0;
 }
+
