@@ -1,0 +1,11 @@
+# ninja log v6
+53	930	7588440478894709	CMakeFiles/zadanie_3.dir/source/main.cpp.obj	730e0bbcf7ae15fc
+2065	2471	7588440499009193	zadanie_3.exe	5cb72fbeef79df1c
+930	1297	7588440487659177	CMakeFiles/zadanie_3.dir/source/Stabulus.cpp.obj	3a731c784f4d8d71
+2	259	7589236771717421	build.ninja	b14c4975f0e47e1d
+60	689	7588440478964745	CMakeFiles/zadanie_3.dir/source/Graph.cpp.obj	a8a0c67445cbf033
+71	1349	7588440479064727	CMakeFiles/zadanie_3.dir/source/TabuSearchDeterministic.cpp.obj	744479f14c75c6c7
+1235	1596	7588440490709098	CMakeFiles/zadanie_3.dir/source/IteratedStabulus.cpp.obj	92fcfe219cd2af57
+66	1235	7588440479014749	CMakeFiles/zadanie_3.dir/source/TabuSearchBase.cpp.obj	14063676750fbf79
+690	2064	7588440485259126	CMakeFiles/zadanie_3.dir/source/TabuSearchProbabilistic.cpp.obj	d0893e45885663ef
+1297	1892	7588440491339108	CMakeFiles/zadanie_3.dir/source/GraphGenerator.cpp.obj	af2dfa76f499b20d

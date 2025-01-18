@@ -1,0 +1,17 @@
+minimum 5 instancji, które zastaną użyte w testach zimplementowanych algorytmów
+
+instancja
+    - dwa pliki, 
+        jeden typu .fasta zawierajacy piec losowo wybranych sekwencji nukleotydowych wraz z ich identyfikatorami, 
+        drugi typu .qual zawierajacy oceny wiearygodnosci odpowiadajace wybranym sekwencjom
+    
+    instancji nie miały długich powatarzajacych się fragmentów
+    trzeba zmodywikować je aby zapewnić w nich obecność motywów o długości kilkunastu nukleotydów
+    sekwencje powinny zawierać po jednym wystąpieniu motywu i nie wszystkie mają być identyczne(różnica w wystąpieniach na 0-2 znakach)
+    motyw nie może być na samym początku sekwencji
+    długośc ciągu liczbowego z oceniami wiwarygodności była ostatecznie taka sama, .qual także można edytować
+    
+    wczytanie instancji
+    usunięcie z wczytanych sekwencji nukleotydowych pozycji o wiarygodności poniżej pewnego założonego progu (próg ten ma być 
+    parametrem ustawianym przez użytkownika); dla każdego pozostawionego znaku należy zapamiętać jego miejsce w sekwencji wejściowej 
+    (sprzed usunięcia znaków), gdzie numerację należy rozpocząć od 1;
