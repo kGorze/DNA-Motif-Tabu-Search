@@ -5,31 +5,26 @@
 #include "DNASequence.h"
 #include "Graph.h"
 
-// Builds a graph suitable for motif finding:
-//   - Each vertex corresponds to a valid k-mer occurrence in one sequence
-//   - Edges connect vertices if they share the same k-mer, are in different sequences,
-//     and satisfy the position difference constraint
-//
-// Usage example:
-//   MotifGraphBuilder builder(seqs, kMin, kMax, qualityThreshold, positionMultiplier);
-//   Graph motifGraph = builder.build();
-
+// Budowanie grafu do motif-finding:
+// - Każdy wierzchołek to wystąpienie k-mera (o długości w zakresie [kMin, kMax])
+//   w jednej z sekwencji, z odpowiednimi jakościami
+// - Krawędzie łączą wierzchołki, jeśli k-mery są identyczne,
+//   pochodzą z różnych sekwencji, a różnica pozycji ≤ positionMultiplier * k
 class MotifGraphBuilder {
 private:
     const std::vector<DNASequence> &sequences;
     int kMin;
     int kMax;
     int qualityThreshold;
-    int positionMultiplier; // e.g. 10 => position difference <= 10*k
+    int positionMultiplier; // np. 10 => |pos1-pos2| ≤ 10*k
 
-    // A temporary struct for storing the (seqIndex, position, k-mer) before building the Graph
     struct KmerOccurrence {
         int seqIndex;
         int position;
         std::string kmer;
     };
 
-    // Collect all valid k-mer occurrences across all sequences
+    // Zbiera wszystkie k-mery spełniające próg jakości
     std::vector<KmerOccurrence> collectKmers() const;
 
 public:

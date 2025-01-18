@@ -1,13 +1,8 @@
-//
-// Created by konrad_guest on 18/01/2025.
-//
 #include "../include/TabuSearchMotif.h"
 #include <algorithm>
 
-// A simple heuristic start: pick any valid vertex from each sequence if possible
+// Prosta inicjalizacja - próbujemy wybrać pierwszy możliwy wierzchołek dla każdej sekwencji
 static Solution naiveMotifInitialization(const Graph &G, int numSequences) {
-    // We'll pick the first vertex we find for each sequence, if feasible
-    // This is a naive approach
     Solution S;
     S.inClique.resize(G.n, false);
     S.size = 0;
@@ -17,7 +12,7 @@ static Solution naiveMotifInitialization(const Graph &G, int numSequences) {
     for (int v = 0; v < G.n; v++) {
         int seqIndex = G.vertexInfo[v].sequenceIndex;
         if (!sequenceUsed[seqIndex]) {
-            // check if it is adjacent to all already chosen vertices
+            // Sprawdzamy, czy jest spójny (w sensie kliki) z już wybranymi
             bool canPick = true;
             for (int u = 0; u < G.n; u++) {
                 if (S.inClique[u]) {
@@ -57,23 +52,21 @@ void TabuSearchMotif::initialize() {
 }
 
 bool TabuSearchMotif::validMotifSolution(const Solution &S) const {
-    // Check for no repeated sequence
-    // Then check it is a clique
+    // Sprawdzamy, czy w S nie ma więcej niż jednego wierzchołka z tej samej sekwencji
+    // i czy to faktycznie klika
     std::vector<int> used(numSequences, 0);
 
-    // also collect vertices
     std::vector<int> verts;
     for (int i = 0; i < G.n; i++) {
         if (S.inClique[i]) {
             int seqIdx = G.vertexInfo[i].sequenceIndex;
             used[seqIdx]++;
-            // If any sequence used more than once => invalid
             if (used[seqIdx] > 1) return false;
             verts.push_back(i);
         }
     }
 
-    // clique check
+    // Sprawdzamy klikalność
     for (size_t i = 0; i < verts.size(); i++) {
         for (size_t j = i + 1; j < verts.size(); j++) {
             if (!G.adj[verts[i]][verts[j]]) {
@@ -86,20 +79,22 @@ bool TabuSearchMotif::validMotifSolution(const Solution &S) const {
 }
 
 Solution TabuSearchMotif::selectBestNeighbor(const Solution &S, const std::vector<Solution> &neighbors) {
-    int bestVal = -1;
+    int bestVal = -1; // tu wykorzystamy S'.size lub łączone kryterium
     Solution bestNeighbor;
     bestNeighbor.size = -1;
 
     for (auto &Sprime : neighbors) {
+        // Musimy mieć poprawną strukturę (maksymalnie 1 wierzchołek z każdej sekwencji)
         if (!validMotifSolution(Sprime)) {
-            continue; // must have exactly 0 or 1 vertex from each sequence
+            continue;
         }
+        // T1
         if (T1_set.find(Sprime) != T1_set.end()) {
-            continue; // taboo
+            continue;
         }
         bool augmenting = (Sprime.size > S.size);
         if (augmenting) {
-            // find added vertex
+            // Znajdujemy dodany wierzchołek
             int addedV = -1;
             for (int i = 0; i < G.n; i++) {
                 if (Sprime.inClique[i] && !S.inClique[i]) {
@@ -108,19 +103,18 @@ Solution TabuSearchMotif::selectBestNeighbor(const Solution &S, const std::vecto
                 }
             }
             if (addedV != -1 && T2_set.find(addedV) != T2_set.end()) {
-                // only allow if it improves best
                 if (Sprime.size <= bestFoundSize) {
                     continue;
                 }
             }
         }
-        // tie-break: prefer bigger clique, then bigger C(S')
-        // (or just bigger C(S') if size is same)
+        // Proste kryterium: preferujemy większą klike
+        // Jeśli rozmiar taki sam, możemy spojrzeć na |C(S')|
         if (Sprime.size > bestVal) {
             bestVal = Sprime.size;
             bestNeighbor = Sprime;
         } else if (Sprime.size == bestVal) {
-            // secondary tie-break by size of C(Sprime)
+            // tie-break: sprawdzamy wielkość C(S')
             int csize1 = (int)computeC(Sprime).size();
             if (bestNeighbor.size >= 0) {
                 int csize2 = (int)computeC(bestNeighbor).size();
@@ -139,21 +133,19 @@ Solution TabuSearchMotif::run() {
     initialize();
     Solution S = bestSol;
 
-    // If we already have the perfect clique of size = numSequences, we can stop
+    // Jeśli mamy już klike rozmiaru numSequences, możemy wyjść
     if (bestFoundSize == numSequences) {
         return bestSol;
     }
 
     while (itersSinceImprovement < MaxIter) {
-        // Build neighbors
         std::vector<int> C_S = computeC(S);
 
         // N+(S)
         std::vector<Solution> N_plus;
         for (int u : C_S) {
-            // but only add if that sequence isn't used
+            // sprawdzamy, czy sekwencja nie jest już używana w S
             int seqIdx = G.vertexInfo[u].sequenceIndex;
-            // check if S already uses that seq
             bool used = false;
             for (int v = 0; v < G.n; v++) {
                 if (S.inClique[v] && G.vertexInfo[v].sequenceIndex == seqIdx) {
@@ -181,17 +173,14 @@ Solution TabuSearchMotif::run() {
             }
         }
 
-        // prefer augmenting
         Solution chosen = selectBestNeighbor(S, N_plus);
 
-        // if none chosen, try removing
         if (chosen.size == -1) {
             chosen = selectBestNeighbor(S, N_minus);
         }
 
-        // if still none found, stuck
         if (chosen.size == -1) {
-            // no moves
+            // Brak sąsiadów
             break;
         }
 
@@ -218,7 +207,7 @@ Solution TabuSearchMotif::run() {
         updateTabuListAfterMove(S, augmenting, changedVertex);
 
         if (bestFoundSize == numSequences) {
-            // We have a perfect solution
+            // Znaleźliśmy idealną klike
             break;
         }
     }

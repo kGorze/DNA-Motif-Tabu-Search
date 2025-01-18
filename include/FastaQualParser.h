@@ -1,7 +1,3 @@
-//
-// Created by konrad_guest on 18/01/2025.
-//
-
 #ifndef FASTAQUALPARSER_H
 #define FASTAQUALPARSER_H
 
@@ -11,9 +7,8 @@
 
 class FastaQualParser {
 public:
-    // Reads a FASTA file and corresponding QUAL file
-    // Returns a vector of DNASequence objects
-    // If the .qual file is missing or not matched, throws std::runtime_error
+    // Odczyt plików .fasta i .qual i zwrócenie wektora DNASequence.
+    // Rzuca wyjątek std::runtime_error w razie błędów.
     static std::vector<DNASequence> parseFastaAndQual(
         const std::string &fastaFilename,
         const std::string &qualFilename
@@ -24,5 +19,4 @@ private:
     static std::vector<std::vector<int>> readQual(const std::string &qualFilename);
 };
 
-
-#endif //FASTAQUALPARSER_H
+#endif // FASTAQUALPARSER_H

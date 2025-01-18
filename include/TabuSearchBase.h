@@ -7,8 +7,8 @@
 #include "Graph.h"
 
 struct Solution {
-    std::vector<bool> inClique;
-    int size;
+    std::vector<bool> inClique; // inClique[v] = czy wierzchołek v jest w rozwiązaniu
+    int size;                   // Rozmiar (liczba wierzchołków w klice)
 };
 
 struct SolutionHash {
@@ -22,9 +22,9 @@ struct SolutionEq {
 class TabuSearchBase {
 protected:
     const Graph &G;
-    int T1_size;
-    int T2_size;
-    int MaxIter;
+    int T1_size;    // rozmiar listy tabu T1
+    int T2_size;    // rozmiar listy tabu T2
+    int MaxIter;    // maksymalna liczba iteracji bez poprawy
 
     std::deque<Solution> T1_list;
     std::unordered_set<Solution, SolutionHash, SolutionEq> T1_set;
@@ -35,7 +35,7 @@ protected:
     Solution bestSol;
     int itersSinceImprovement;
 
-    // Utility methods
+    // Metody pomocnicze
     std::vector<int> solutionVertices(const Solution &S) const;
     std::vector<int> computeC(const Solution &S) const;
     Solution makeSolution(const std::vector<int> &verts) const;
@@ -53,6 +53,7 @@ public:
     TabuSearchBase(const Graph &graph, int T1_sz, int T2_sz, int maxIter);
     virtual ~TabuSearchBase() = default;
 
+    // Główna pętla tabu search
     virtual Solution run() = 0;
 };
 

@@ -81,125 +81,271 @@
 // initializing data structures, or advanced memory management. Some simplifications were made for brevity.
 
 #include <iostream>
-#include "../include/Graph.h"
-#include "../include/TabuSearchDeterministic.h"
-#include "../include/TabuSearchProbabilistic.h"
-#include "../include/Stabulus.h"
-#include "../include/IteratedStabulus.h"
-#include "../include/GraphGenerator.h"
-
-#include <iostream>
-#include <vector>
 #include <string>
+#include <vector>
+#include <random>
+#include <chrono>
+#include <algorithm>
+
+#include "../include/DNASequence.h"
+#include "../include/FastaQualParser.h"
 #include "../include/Graph.h"
 #include "../include/GraphGenerator.h"
-#include "../include/TabuSearchDeterministic.h"
-#include "../include/TabuSearchProbabilistic.h"
-#include "../include/Stabulus.h"
 #include "../include/IteratedStabulus.h"
-#include "../include/FastaQualParser.h"
 #include "../include/MotifGraphBuilder.h"
+#include "../include/Stabulus.h"
+#include "../include/TabuSearchBase.h"
+#include "../include/TabuSearchDeterministic.h"
 #include "../include/TabuSearchMotif.h"
+#include "../include/TabuSearchProbabilistic.h"
 
-int main(int argc, char** argv) {
-    // ------------------------------------------------------------
-    // Part 1: Demonstrate existing code on a random graph
-    // ------------------------------------------------------------
-    std::cout << "=== Maximum Clique via Tabu Search (Random Graph Demo) ===\n";
+// GLOBALNE (dla uproszczenia): pula wszystkich sekwencji z duzego pliku
+static std::vector<DNASequence> gAllSequences;
 
-    int n = 100;
-    double a = 0.25;
-    double b = 0.75;
-    Graph G = GraphGenerator::generate(n, a, b);
+// 5 aktualnie wybranych sekwencji
+static std::vector<DNASequence> gSelectedSequences;
 
-    // Count edges just for info
-    int edgeCount = 0;
-    for (int i = 0; i < n; i++) {
-        for (int j = i + 1; j < n; j++) {
-            if (G.adj[i][j]) edgeCount++;
-        }
-    }
-    std::cout << "Random graph with " << n << " vertices, " << edgeCount << " edges.\n";
+// Przechowujemy parametry motywu (np. wprowadzonego sztucznie)
+static std::string gCurrentMotif;
+static std::vector<int> gMotifPositions; // index i -> pozycja w sekwencji i-tej
 
-    // Deterministic TS for Max Clique
-    {
-        TabuSearchDeterministic tsd(G, 10, 5, 500);
-        Solution best = tsd.run();
-        std::cout << "Deterministic TS best clique size: " << best.size << "\n";
+// Generator liczb losowych
+static std::mt19937 rng((unsigned)std::chrono::steady_clock::now().time_since_epoch().count());
+
+// ------------------------------------------------------------------------------------------
+// Funkcja menu 1: Losujemy 5 sekwencji z puli (gAllSequences) i zapisujemy w gSelectedSequences
+// ------------------------------------------------------------------------------------------
+void pickFiveRandomSequences() {
+    if (gAllSequences.size() < 5) {
+        std::cout << "[Blad] Za malo sekwencji w puli, wczytaj wiekszy plik!\n";
+        return;
     }
 
-    // Probabilistic TS for Max Clique
-    {
-        TabuSearchProbabilistic tsp(G, 10, 5, 500, 2, 3);
-        Solution best = tsp.run();
-        std::cout << "Probabilistic TS best clique size: " << best.size << "\n";
+    // Losujemy 5 unikalnych indeksow
+    std::vector<int> indices(gAllSequences.size());
+    for (size_t i = 0; i < indices.size(); i++) {
+        indices[i] = (int)i;
+    }
+    std::shuffle(indices.begin(), indices.end(), rng);
+
+    gSelectedSequences.clear();
+    for (int i = 0; i < 5; i++) {
+        gSelectedSequences.push_back(gAllSequences[indices[i]]);
     }
 
-    // ------------------------------------------------------------
-    // Part 2: Demonstrate motif-finding extension
-    // ------------------------------------------------------------
-    std::cout << "\n=== DNA Motif Finding Demo ===\n";
-    if (argc < 3) {
-        std::cout << "Usage: " << argv[0] << " <fasta_file> <qual_file>\n";
-        std::cout << "Skipping motif demo due to missing arguments.\n";
-        return 0;
+    // Zerujemy stare informacje o wstrzyknietym motywie
+    gCurrentMotif.clear();
+    gMotifPositions.clear();
+
+    std::cout << "Wylosowano 5 sekwencji:\n";
+    for (int i = 0; i < 5; i++) {
+        std::cout << "  " << i << ") " << gSelectedSequences[i].name 
+                  << " (len=" << gSelectedSequences[i].length() << ")\n";
+    }
+}
+
+// ------------------------------------------------------------------------------------------
+// Funkcja menu 2: Dodajemy (wstrzykujemy) wskazany motyw do kazdej z 5 sekwencji
+// w losowej (lub pytanej) pozycji. Wypisujemy w formacie:
+// {nazwa}{pozycja}{...kilka poprzednich...}..{motyw}..{kilka nastepnych}
+// ------------------------------------------------------------------------------------------
+void addMotifToSelected() {
+    if (gSelectedSequences.size() < 5) {
+        std::cout << "[Blad] Nie wybrano 5 sekwencji.\n";
+        return;
     }
 
-    // Example parameters
-    int kMin = 5;
-    int kMax = 6;
-    int qualityThreshold = 20;
-    int positionMultiplier = 10;  // for difference <= 10*k
+    std::cout << "Podaj motyw, ktory chcesz wstrzyknac (np. 'ACGTACGT'):\n> ";
+    std::cin >> gCurrentMotif;
+    if (gCurrentMotif.empty()) {
+        std::cout << "[Blad] Motyw jest pusty!\n";
+        return;
+    }
 
-    try {
-        // 1) Parse FASTA/QUAL
-        std::string fastaFile = argv[1];
-        std::string qualFile = argv[2];
-        std::vector<DNASequence> sequences = FastaQualParser::parseFastaAndQual(fastaFile, qualFile);
-        int seqCount = (int)sequences.size();
+    gMotifPositions.clear();
+    gMotifPositions.resize(5, -1);
 
-        std::cout << "Loaded " << seqCount << " sequences.\n";
-        for (int i = 0; i < seqCount; i++) {
-            std::cout << "  Seq " << i << ": " << sequences[i].name 
-                      << " (length=" << sequences[i].length() << ")\n";
+    // Dla kazdej z 5 sekwencji wstrzykujemy motyw w losowym miejscu
+    // (o ile motyw sie zmiesci)
+    for (int i = 0; i < 5; i++) {
+        DNASequence &seq = gSelectedSequences[i];
+        int maxStart = (int)seq.length() - (int)gCurrentMotif.size();
+        if (maxStart < 0) {
+            // Jesli sekwencja krotsza od motywu, pomijamy
+            std::cout << "[Uwaga] Sekwencja " << seq.name << " za krotka, nie wstrzyknieto.\n";
+            gMotifPositions[i] = -1;
+            continue;
+        }
+        std::uniform_int_distribution<int> dist(0, maxStart);
+        int startPos = dist(rng);
+
+        // Wstrzykniecie: zamieniamy bazy w zakresie [startPos, startPos+motif.size())
+        for (size_t k = 0; k < gCurrentMotif.size(); k++) {
+            seq.bases[startPos + k] = gCurrentMotif[k];
+            // Na potrzeby testu: ustawmy qualityScores na wysokie
+            seq.qualityScores[startPos + k] = 35; 
+        }
+        gMotifPositions[i] = startPos;
+    }
+
+    // Teraz wypisujemy w żądanym formacie
+    std::cout << "Wstrzykniety motyw: " << gCurrentMotif << "\n\n";
+    for (int i = 0; i < 5; i++) {
+        const DNASequence &seq = gSelectedSequences[i];
+        int pos = gMotifPositions[i];
+        std::cout << "[" << seq.name << "]\n";
+
+        if (pos < 0) {
+            std::cout << "  Motyw nie wstrzykniety (za krotka sekwencja).\n";
+            continue;
         }
 
-        // 2) Build motif graph
-        MotifGraphBuilder builder(sequences, kMin, kMax, qualityThreshold, positionMultiplier);
-        Graph motifGraph = builder.build();
-        std::cout << "Motif graph built with " << motifGraph.n << " vertices.\n";
+        // Kilka nukleotydów przed
+        int beforeCount = 5;
+        int startPrint = std::max(0, pos - beforeCount);
+        std::string before = seq.bases.substr(startPrint, pos - startPrint);
 
-        // 3) Run specialized TabuSearch for motif
-        // Each input sequence must appear exactly once => we want a clique of size = seqCount
-        TabuSearchMotif motifSearch(motifGraph, 10, 5, 500, seqCount);
-        Solution motifSol = motifSearch.run();
+        // Sam motyw
+        std::string motifPart = seq.bases.substr(pos, gCurrentMotif.size());
 
-        // 4) Output the found motif
-        if (motifSol.size == seqCount) {
-            std::cout << "Found a motif clique of size " << motifSol.size << " (one vertex per sequence).\n";
-        } else {
-            std::cout << "Found a near-solution of size " << motifSol.size
-                      << ", expected " << seqCount << " if perfect.\n";
-        }
+        // Kilka nukleotydów po
+        int afterCount = 5;
+        int endPos = pos + (int)gCurrentMotif.size();
+        int endPrint = std::min((int)seq.length(), endPos + afterCount);
+        std::string after = seq.bases.substr(endPos, endPrint - endPos);
 
-        // Print the details of each vertex in the found set
-        std::vector<int> chosenVerts;
-        for (int i = 0; i < motifGraph.n; i++) {
-            if (motifSol.inClique[i]) {
-                chosenVerts.push_back(i);
-            }
-        }
+        std::cout << "  Pozycja = " << pos << "\n";
+        std::cout << "  Fragment = " << before << ".." << motifPart << ".." << after << "\n";
+    }
+}
+
+// ------------------------------------------------------------------------------------------
+// Funkcja menu 3: Budujemy graf motywu na podstawie gSelectedSequences
+// i uruchamiamy TabuSearchMotif, a nastepnie analizujemy wyniki
+// ------------------------------------------------------------------------------------------
+void runTabuMotifSearch() {
+    if (gSelectedSequences.size() < 5) {
+        std::cout << "[Blad] Nie mamy 5 sekwencji do analizy.\n";
+        return;
+    }
+
+    // Przykładowe parametry
+    int kMin = 4;
+    int kMax = 9;
+    int qualityThreshold = 14;  // np. z raportu: testowanie roznych wartosci: 14, 19, 24 itp.
+    int positionMultiplier = 10;
+
+    // Budujemy graf
+    MotifGraphBuilder builder(gSelectedSequences, kMin, kMax, qualityThreshold, positionMultiplier);
+    Graph motifGraph = builder.build();
+    int seqCount = (int)gSelectedSequences.size();
+
+    std::cout << "Zbudowano graf motywu. Liczba wierzcholkow = " << motifGraph.n << "\n";
+
+    // Odpalamy TabuSearchMotif - chcemy klike rozmiaru = 5
+    TabuSearchMotif motifSearch(motifGraph, 10, 5, 1000, seqCount);
+    Solution sol = motifSearch.run();
+
+    // Wyświetlamy wyniki
+    std::cout << "TabuSearchMotif: uzyskana klika rozmiaru " << sol.size << ".\n";
+    if (sol.size == seqCount) {
+        std::cout << "-> Znaleziono idealny motyw we wszystkich sekwencjach.\n";
+    } else {
+        std::cout << "-> Nie jest to kompletna reprezentacja we wszystkich 5 sekwencjach.\n";
+    }
+
+    std::vector<int> chosenVerts;
+    for (int i = 0; i < motifGraph.n; i++) {
+        if (sol.inClique[i]) chosenVerts.push_back(i);
+    }
+
+    // Prezentacja, które k-mery (sekwencja, pozycja, sam k-mer) zostały znalezione
+    std::cout << "Znaleziona klika:\n";
+    for (int idx : chosenVerts) {
+        const VertexData &vd = motifGraph.vertexInfo[idx];
+        std::cout << "  SeqIndex=" << vd.sequenceIndex
+                  << " Position=" << vd.position
+                  << " K-mer=" << vd.kmer << "\n";
+    }
+
+    // Dodatkowo sprawdzimy, czy któraś z pozycji pokrywa się z wstrzykniętym motywem
+    if (!gCurrentMotif.empty()) {
+        std::cout << "\nAnaliza sztucznego motywu: " << gCurrentMotif << "\n";
         for (int idx : chosenVerts) {
             const VertexData &vd = motifGraph.vertexInfo[idx];
-            std::cout << "  Sequence=" << vd.sequenceIndex
-                      << " Position=" << vd.position
-                      << " K-mer=" << vd.kmer << "\n";
+            // Sprawdz, czy to "sztuczne" wystąpienie
+            // tzn. czy wstrzyknęliśmy i czy te pozycje się pokrywają
+            if (vd.kmer == gCurrentMotif) {
+                // weryfikacja, czy position == gMotifPositions[seqIndex], zakładając dokładną zgodność
+                if (vd.position == gMotifPositions[vd.sequenceIndex]) {
+                    std::cout << "  -> K-mer w sekwencji " << vd.sequenceIndex
+                              << " to SZTUCZNIE wprowadzony motyw!\n";
+                } else {
+                    std::cout << "  -> K-mer w sekwencji " << vd.sequenceIndex
+                              << " to raczej NATURALNE wystąpienie " << vd.kmer << "\n";
+                }
+            }
         }
     }
-    catch (const std::exception &ex) {
-        std::cerr << "ERROR in motif-finding demo: " << ex.what() << "\n";
+}
+
+// ------------------------------------------------------------------------------------------
+// Główna funkcja z pętlą menu
+// ------------------------------------------------------------------------------------------
+int main(int argc, char** argv) {
+    std::string fastaFile = "sample.fasta";
+    std::string qualFile = "sample.qual";
+
+    try {
+        // Wczytanie plików sample z bieżącego katalogu
+        gAllSequences = FastaQualParser::parseFastaAndQual(fastaFile, qualFile);
+
+        std::cout << "Wczytano " << gAllSequences.size() << " sekwencji z plikow " 
+                  << fastaFile << " i " << qualFile << ".\n";
+    }
+    catch(const std::exception &ex) {
+        std::cerr << "[BLAD] Nie mozna wczytac plikow " << fastaFile << " lub " << qualFile 
+                  << ": " << ex.what() << "\n";
+        return 1;
+    }
+
+    // Proste menu
+    while (true) {
+        std::cout << "\n=== MENU ===\n"
+                  << "1) Wylosuj 5 sekwencji z puli\n"
+                  << "2) Dodaj motyw do wybranych sekwencji i wyswietl\n"
+                  << "3) Wyszukaj motyw TabuSearch (1 wierzcholek/sekwencja)\n"
+                  << "4) [Wyjscie]\n"
+                  << "Wybierz opcje: ";
+
+        int opt;
+        std::cin >> opt;
+        if (!std::cin.good()) {
+            std::cin.clear();
+            std::cin.ignore(10000, '\n');
+            continue;
+        }
+
+        switch(opt) {
+        case 1:
+            pickFiveRandomSequences();
+            break;
+        case 2:
+            addMotifToSelected();
+            break;
+        case 3:
+            runTabuMotifSearch();
+            break;
+        case 4:
+            std::cout << "Koniec.\n";
+            return 0;
+        default:
+            std::cout << "Nieznana opcja.\n";
+            break;
+        }
     }
 
     return 0;
 }
+
 

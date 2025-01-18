@@ -1,7 +1,3 @@
-//
-// Created by konrad_guest on 16/12/2024.
-//
-
 #ifndef TABUSEARCHPROBABILISTIC_H
 #define TABUSEARCHPROBABILISTIC_H
 
@@ -9,17 +5,17 @@
 
 class TabuSearchProbabilistic : public TabuSearchBase {
 private:
-    int k; // number of vertices to remove in shake-up
-    int L; // sample size
+    int k; // liczba wierzchołków usuwanych w shake-up
+    int L; // rozmiar próbki N+(S) do losowego wyboru
 
     void initialize() override;
     Solution selectBestNeighbor(const Solution &S, const std::vector<Solution> &neighbors) override;
-    void randomShakeUp(Solution &S, int k);
-    std::vector<Solution> sampleAugmentingNeighbors(const std::vector<Solution> &N_plus, int L);
+    void randomShakeUp(Solution &S, int kk);
+    std::vector<Solution> sampleAugmentingNeighbors(const std::vector<Solution> &N_plus, int LL);
 
 public:
     TabuSearchProbabilistic(const Graph &G, int T1_sz, int T2_sz, int maxIter, int k_, int L_);
     Solution run() override;
 };
 
-#endif
+#endif // TABUSEARCHPROBABILISTIC_H

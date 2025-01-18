@@ -1,7 +1,3 @@
-//
-// Created by konrad_guest on 16/12/2024.
-//
-
 #ifndef TABUSEARCHDETERMINISTIC_H
 #define TABUSEARCHDETERMINISTIC_H
 
@@ -9,7 +5,6 @@
 
 class TabuSearchDeterministic : public TabuSearchBase {
 private:
-    // Deterministic variant initialization and move selection
     void initialize() override;
     Solution selectBestNeighbor(const Solution &S, const std::vector<Solution> &neighbors) override;
 
@@ -18,4 +13,4 @@ public:
     Solution run() override;
 };
 
-#endif
+#endif // TABUSEARCHDETERMINISTIC_H

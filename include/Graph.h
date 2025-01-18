@@ -1,43 +1,39 @@
-//
-// Created by konrad_guest on 16/12/2024.
-//
-
 #ifndef GRAPH_H
 #define GRAPH_H
 
 #include <vector>
 #include <string>
 
-// This struct holds all the extra metadata needed for motif finding.
+// Metadane wierzchołka dla problemu motywu
 struct VertexData {
-    int sequenceIndex;   // which DNA sequence
-    int position;        // position in that sequence
-    std::string kmer;    // the k-mer string
+    int sequenceIndex;   // Indeks sekwencji, do której należy k-mer
+    int position;        // Pozycja w sekwencji
+    std::string kmer;    // Sam k-mer
 };
 
 class Graph {
 public:
-    int n; // number of vertices
+    int n; // liczba wierzchołków
 
-    // Adjacency matrix: adj[u][v] = true if edge (u,v) exists
+    // Macierz sąsiedztwa: adj[u][v] = true jeśli jest krawędź (u,v)
     std::vector<std::vector<bool>> adj;
 
-    // Additional data for each vertex, used in motif context
+    // Dodatkowe informacje o wierzchołkach, przydatne w motif-finding
     std::vector<VertexData> vertexInfo;
 
-    // Constructor for an empty graph with n vertices
-    // (Will fill adjacency with false, and you can fill vertexInfo externally)
+    // Konstruktor - tworzy pusty graf na n wierzchołkach
     Graph(int n_);
 
-    // Add an undirected edge (u,v)
+    // Dodaje krawędź nieskierowaną (u,v)
     void add_edge(int u, int v);
 
-    // Check if there is an edge (u,v)
+    // Sprawdza, czy istnieje krawędź (u,v)
     bool is_edge(int u, int v) const;
 
-    // For convenience in motif-related tasks: check if two vertices can be connected
-    // i.e., identical k-mers, different sequences, position difference constraint, etc.
-    // Not used in the old code, but can be used in new code if needed.
+    // Funkcja pomocnicza do budowania grafu motywu
+    // Sprawdza, czy dwa wierzchołki spełniają kryteria: ten sam k-mer,
+    // różne sekwencje, różnica pozycji ≤ positionMultiplier * k
     static bool canConnect(const VertexData &a, const VertexData &b, int positionMultiplier);
 };
-#endif //GRAPH_H
+
+#endif // GRAPH_H

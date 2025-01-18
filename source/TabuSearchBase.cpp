@@ -2,7 +2,7 @@
 #include <algorithm>
 
 std::size_t SolutionHash::operator()(const Solution &S) const {
-    // Simple polynomial hash
+    // Prosty hash polinomialny na wektor inClique
     std::size_t h = 0;
     for (bool b : S.inClique) {
         h = h * 131 + (b ? 1 : 0);
@@ -31,23 +31,24 @@ std::vector<int> TabuSearchBase::solutionVertices(const Solution &S) const {
 }
 
 std::vector<int> TabuSearchBase::computeC(const Solution &S) const {
-    // C(S) = set of vertices outside S that are adjacent to all in S
+    // C(S) - wierzchołki spoza S będące sąsiadami wszystkich wierzchołków S
     if (S.size == 0) {
-        // everything is in candidate set
         std::vector<int> allV(G.n);
-        for (int i = 0; i < G.n; i++) allV[i] = i;
+        for (int i = 0; i < G.n; i++) {
+            allV[i] = i;
+        }
         return allV;
     }
 
     std::vector<int> Sverts = solutionVertices(S);
     std::vector<bool> can(G.n, true);
 
-    // Exclude vertices already in solution
+    // wykluczamy wierzchołki, które są w S
     for (int v : Sverts) {
         can[v] = false;
     }
 
-    // For each vertex in S, remove any that are not adjacent
+    // dla każdego wierzchołka w S - usuwamy z 'can' te, które nie są z nim połączone
     for (int w : Sverts) {
         for (int v = 0; v < G.n; v++) {
             if (can[v] && !G.is_edge(w, v)) {
@@ -76,7 +77,7 @@ Solution TabuSearchBase::makeSolution(const std::vector<int> &verts) const {
 }
 
 int TabuSearchBase::upperBoundFromS(const Solution &S) const {
-    // naive upper bound: size + |C(S)|
+    // Górne ograniczenie: |S| + |C(S)|
     return S.size + (int)computeC(S).size();
 }
 
@@ -100,7 +101,7 @@ void TabuSearchBase::updateBestIfNeeded(const Solution &S) {
 }
 
 void TabuSearchBase::updateTabuListAfterMove(const Solution &S, bool augmenting, int changedVertex) {
-    // Update T1
+    // Aktualizacja T1
     T1_list.push_back(S);
     T1_set.insert(S);
     if ((int)T1_list.size() > T1_size) {
@@ -108,7 +109,7 @@ void TabuSearchBase::updateTabuListAfterMove(const Solution &S, bool augmenting,
         T1_list.pop_front();
     }
 
-    // If it was a removing move, track that vertex in T2
+    // Jeśli ruch polegał na usunięciu wierzchołka z kliki:
     if (!augmenting && changedVertex != -1) {
         T2_list.push_back(changedVertex);
         T2_set.insert(changedVertex);

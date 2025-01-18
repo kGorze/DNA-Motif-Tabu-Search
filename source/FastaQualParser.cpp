@@ -1,6 +1,3 @@
-//
-// Created by konrad_guest on 18/01/2025.
-//
 #include "../include/FastaQualParser.h"
 #include <fstream>
 #include <sstream>
@@ -11,23 +8,25 @@ std::vector<DNASequence> FastaQualParser::parseFastaAndQual(
     const std::string &fastaFilename,
     const std::string &qualFilename
 ) {
-    // Read FASTA
+    // Wczytaj FASTA
     std::vector<std::string> names;
     std::vector<std::string> sequences = readFasta(fastaFilename, names);
 
-    // Read QUAL
+    // Wczytaj QUAL
     std::vector<std::vector<int>> qualities = readQual(qualFilename);
 
     if (sequences.size() != qualities.size()) {
-        throw std::runtime_error("Mismatch between number of FASTA sequences and QUAL sequences.");
+        throw std::runtime_error("Liczba sekwencji w FASTA nie odpowiada liczbie sekwencji w QUAL!");
     }
 
-    // Combine into DNASequence objects
+    // Połącz w DNASequence
     std::vector<DNASequence> result;
     result.reserve(sequences.size());
     for (size_t i = 0; i < sequences.size(); i++) {
         if (sequences[i].size() != qualities[i].size()) {
-            throw std::runtime_error("Sequence length does not match number of quality scores for sequence index " + std::to_string(i));
+            throw std::runtime_error(
+                "Długość sekwencji nie pokrywa się z liczbą wartości QUAL dla sekwencji nr " + std::to_string(i)
+            );
         }
         result.emplace_back(names[i], sequences[i], qualities[i]);
     }
@@ -37,7 +36,7 @@ std::vector<DNASequence> FastaQualParser::parseFastaAndQual(
 std::vector<std::string> FastaQualParser::readFasta(const std::string &fastaFilename, std::vector<std::string> &names) {
     std::ifstream in(fastaFilename);
     if (!in.good()) {
-        throw std::runtime_error("Cannot open FASTA file: " + fastaFilename);
+        throw std::runtime_error("Nie można otworzyć pliku FASTA: " + fastaFilename);
     }
 
     std::vector<std::string> sequences;
@@ -47,19 +46,19 @@ std::vector<std::string> FastaQualParser::readFasta(const std::string &fastaFile
     while (std::getline(in, line)) {
         if (line.empty()) continue;
         if (line[0] == '>') {
-            // new sequence header
+            // Nagłówek nowej sekwencji
             if (!currentSeq.empty()) {
                 sequences.push_back(currentSeq);
                 names.push_back(currentName);
             }
-            currentName = line.substr(1); // strip '>'
+            currentName = line.substr(1); // usunięcie '>'
             currentSeq.clear();
         } else {
-            // part of sequence
+            // Kolejne fragmenty sekwencji
             currentSeq += line;
         }
     }
-    // last sequence
+    // Ostatnia sekwencja
     if (!currentSeq.empty()) {
         sequences.push_back(currentSeq);
         names.push_back(currentName);
@@ -71,7 +70,7 @@ std::vector<std::string> FastaQualParser::readFasta(const std::string &fastaFile
 std::vector<std::vector<int>> FastaQualParser::readQual(const std::string &qualFilename) {
     std::ifstream in(qualFilename);
     if (!in.good()) {
-        throw std::runtime_error("Cannot open QUAL file: " + qualFilename);
+        throw std::runtime_error("Nie można otworzyć pliku QUAL: " + qualFilename);
     }
 
     std::vector<std::vector<int>> allQuals;
@@ -81,13 +80,13 @@ std::vector<std::vector<int>> FastaQualParser::readQual(const std::string &qualF
     while (std::getline(in, line)) {
         if (line.empty()) continue;
         if (line[0] == '>') {
-            // new sequence
+            // Nowa sekwencja
             if (!currentQuals.empty()) {
                 allQuals.push_back(currentQuals);
             }
             currentQuals.clear();
         } else {
-            // parse quality scores
+            // Czytamy wartości numeryczne jakości
             std::stringstream ss(line);
             int score;
             while (ss >> score) {
@@ -95,8 +94,7 @@ std::vector<std::vector<int>> FastaQualParser::readQual(const std::string &qualF
             }
         }
     }
-
-    // last sequence
+    // Ostatnia sekwencja
     if (!currentQuals.empty()) {
         allQuals.push_back(currentQuals);
     }
