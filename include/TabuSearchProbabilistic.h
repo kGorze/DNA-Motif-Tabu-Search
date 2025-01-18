@@ -5,11 +5,12 @@
 
 class TabuSearchProbabilistic : public TabuSearchBase {
 private:
-    int k; // liczba wierzchołków usuwanych w shake-up
-    int L; // rozmiar próbki N+(S) do losowego wyboru
+    int k;  // liczba wierzcholkow usuwanych w random shake-up
+    int L;  // rozmiar probkowania N+(S)
 
     void initialize() override;
-    Solution selectBestNeighbor(const Solution &S, const std::vector<Solution> &neighbors) override;
+    Solution selectBestNeighbor(const Solution &S, 
+                                const std::vector<Solution> &neighbors) override;
     void randomShakeUp(Solution &S, int kk);
     std::vector<Solution> sampleAugmentingNeighbors(const std::vector<Solution> &N_plus, int LL);
 

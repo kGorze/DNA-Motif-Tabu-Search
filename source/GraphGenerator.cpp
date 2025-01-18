@@ -12,15 +12,14 @@ Graph GraphGenerator::generate(int n, double a, double b) {
         w[i] = dist(rng);
     }
 
-    std::uniform_real_distribution<double> edgeDist(0.0, 1.0);
-    for (int i = 0; i < n - 1; i++) {
-        for (int j = i + 1; j < n; j++) {
+    std::uniform_real_distribution<double> distE(0.0,1.0);
+    for (int i = 0; i < n-1; i++) {
+        for (int j = i+1; j < n; j++) {
             double p = (w[i] + w[j]) / 2.0;
-            if (edgeDist(rng) < p) {
-                G.add_edge(i, j);
+            if (distE(rng) < p) {
+                G.add_edge(i,j);
             }
         }
     }
-
     return G;
 }

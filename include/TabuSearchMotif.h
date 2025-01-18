@@ -2,20 +2,30 @@
 #define TABUSEARCHMOTIF_H
 
 #include "TabuSearchBase.h"
+#include "Graph.h"
 
-// Specjalizowana wersja Tabu Search do znajdowania kliki,
-// w której jest dokładnie jeden wierzchołek z każdej sekwencji.
-// Jeśli mamy S sekwencji, chcemy kliki o rozmiarze = S.
 class TabuSearchMotif : public TabuSearchBase {
-private:
-    int numSequences; // liczba sekwencji
+protected:
+    int numSequences;
 
+    // Nowe parametry do dywersyfikacji
+    int diversificationInterval; 
+    int diversificationCounter;
+
+    // Override base class virtual methods
     void initialize() override;
-    Solution selectBestNeighbor(const Solution &S, const std::vector<Solution> &neighbors) override;
-    bool validMotifSolution(const Solution &S) const;
+    Solution selectBestNeighbor(const Solution& S,
+                                const std::vector<Solution>& neighbors) override;
+
+    // Helper methods
+    bool validMotifSolution(const Solution& S) const;
+
+    // Dodajemy metodę do lekkiej dywersyfikacji
+    virtual int evaluateMotifSolution(const Solution& S) const;
+    virtual void diversify(Solution& S);
 
 public:
-    TabuSearchMotif(const Graph &G, int T1_sz, int T2_sz, int maxIter, int numSeq);
+    TabuSearchMotif(const Graph& G, int T1_sz, int T2_sz, int maxIter, int numSeq);
     Solution run() override;
 };
 

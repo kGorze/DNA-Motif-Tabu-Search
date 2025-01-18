@@ -2,13 +2,13 @@
 #define TABUSEARCHBASE_H
 
 #include <vector>
-#include <unordered_set>
 #include <deque>
+#include <unordered_set>
 #include "Graph.h"
 
 struct Solution {
-    std::vector<bool> inClique; // inClique[v] = czy wierzchołek v jest w rozwiązaniu
-    int size;                   // Rozmiar (liczba wierzchołków w klice)
+    std::vector<bool> inClique;
+    int size;
 };
 
 struct SolutionHash {
@@ -22,9 +22,9 @@ struct SolutionEq {
 class TabuSearchBase {
 protected:
     const Graph &G;
-    int T1_size;    // rozmiar listy tabu T1
-    int T2_size;    // rozmiar listy tabu T2
-    int MaxIter;    // maksymalna liczba iteracji bez poprawy
+    int T1_size;
+    int T2_size;
+    int MaxIter;
 
     std::deque<Solution> T1_list;
     std::unordered_set<Solution, SolutionHash, SolutionEq> T1_set;
@@ -35,17 +35,16 @@ protected:
     Solution bestSol;
     int itersSinceImprovement;
 
-    // Metody pomocnicze
     std::vector<int> solutionVertices(const Solution &S) const;
     std::vector<int> computeC(const Solution &S) const;
     Solution makeSolution(const std::vector<int> &verts) const;
     int upperBoundFromS(const Solution &S) const;
     bool isClique(const std::vector<int> &solVec) const;
 
+    virtual void initialize() = 0;
     virtual Solution selectBestNeighbor(const Solution &S,
                                         const std::vector<Solution> &neighbors) = 0;
 
-    virtual void initialize() = 0;
     void updateBestIfNeeded(const Solution &S);
     void updateTabuListAfterMove(const Solution &S, bool augmenting, int changedVertex);
 
@@ -53,7 +52,6 @@ public:
     TabuSearchBase(const Graph &graph, int T1_sz, int T2_sz, int maxIter);
     virtual ~TabuSearchBase() = default;
 
-    // Główna pętla tabu search
     virtual Solution run() = 0;
 };
 

@@ -121,6 +121,18 @@ build CMakeFiles/zadanie_3.dir/source/TabuSearchMotif.cpp.obj: CXX_COMPILER__zad
   OBJECT_DIR = CMakeFiles\zadanie_3.dir
   OBJECT_FILE_DIR = CMakeFiles\zadanie_3.dir\source
 
+build CMakeFiles/zadanie_3.dir/source/Menu.cpp.obj: CXX_COMPILER__zadanie_3_unscanned_Debug C$:/Users/konrad_guest/Documents/Studia/semestr_3/Algorytmy_kombinatoryczne_w_bioinformatyce/zadanie_3/source/Menu.cpp || cmake_object_order_depends_target_zadanie_3
+  DEP_FILE = CMakeFiles\zadanie_3.dir\source\Menu.cpp.obj.d
+  FLAGS = -g -std=gnu++14 -fdiagnostics-color=always
+  OBJECT_DIR = CMakeFiles\zadanie_3.dir
+  OBJECT_FILE_DIR = CMakeFiles\zadanie_3.dir\source
+
+build CMakeFiles/zadanie_3.dir/source/EnhancedMotif.cpp.obj: CXX_COMPILER__zadanie_3_unscanned_Debug C$:/Users/konrad_guest/Documents/Studia/semestr_3/Algorytmy_kombinatoryczne_w_bioinformatyce/zadanie_3/source/EnhancedMotif.cpp || cmake_object_order_depends_target_zadanie_3
+  DEP_FILE = CMakeFiles\zadanie_3.dir\source\EnhancedMotif.cpp.obj.d
+  FLAGS = -g -std=gnu++14 -fdiagnostics-color=always
+  OBJECT_DIR = CMakeFiles\zadanie_3.dir
+  OBJECT_FILE_DIR = CMakeFiles\zadanie_3.dir\source
+
 
 # =============================================================================
 # Link build statements for EXECUTABLE target zadanie_3
@@ -129,7 +141,7 @@ build CMakeFiles/zadanie_3.dir/source/TabuSearchMotif.cpp.obj: CXX_COMPILER__zad
 #############################################
 # Link the executable zadanie_3.exe
 
-build zadanie_3.exe: CXX_EXECUTABLE_LINKER__zadanie_3_Debug CMakeFiles/zadanie_3.dir/source/main.cpp.obj CMakeFiles/zadanie_3.dir/source/Graph.cpp.obj CMakeFiles/zadanie_3.dir/source/TabuSearchBase.cpp.obj CMakeFiles/zadanie_3.dir/source/TabuSearchDeterministic.cpp.obj CMakeFiles/zadanie_3.dir/source/TabuSearchProbabilistic.cpp.obj CMakeFiles/zadanie_3.dir/source/Stabulus.cpp.obj CMakeFiles/zadanie_3.dir/source/IteratedStabulus.cpp.obj CMakeFiles/zadanie_3.dir/source/GraphGenerator.cpp.obj CMakeFiles/zadanie_3.dir/source/DNASequence.cpp.obj CMakeFiles/zadanie_3.dir/source/FastaQualParser.cpp.obj CMakeFiles/zadanie_3.dir/source/MotifGraphBuilder.cpp.obj CMakeFiles/zadanie_3.dir/source/TabuSearchMotif.cpp.obj
+build zadanie_3.exe: CXX_EXECUTABLE_LINKER__zadanie_3_Debug CMakeFiles/zadanie_3.dir/source/main.cpp.obj CMakeFiles/zadanie_3.dir/source/Graph.cpp.obj CMakeFiles/zadanie_3.dir/source/TabuSearchBase.cpp.obj CMakeFiles/zadanie_3.dir/source/TabuSearchDeterministic.cpp.obj CMakeFiles/zadanie_3.dir/source/TabuSearchProbabilistic.cpp.obj CMakeFiles/zadanie_3.dir/source/Stabulus.cpp.obj CMakeFiles/zadanie_3.dir/source/IteratedStabulus.cpp.obj CMakeFiles/zadanie_3.dir/source/GraphGenerator.cpp.obj CMakeFiles/zadanie_3.dir/source/DNASequence.cpp.obj CMakeFiles/zadanie_3.dir/source/FastaQualParser.cpp.obj CMakeFiles/zadanie_3.dir/source/MotifGraphBuilder.cpp.obj CMakeFiles/zadanie_3.dir/source/TabuSearchMotif.cpp.obj CMakeFiles/zadanie_3.dir/source/Menu.cpp.obj CMakeFiles/zadanie_3.dir/source/EnhancedMotif.cpp.obj
   FLAGS = -g
   LINK_LIBRARIES = -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32
   OBJECT_DIR = CMakeFiles\zadanie_3.dir

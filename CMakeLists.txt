@@ -26,4 +26,9 @@ add_executable(zadanie_3
         include/MotifGraphBuilder.h
         source/MotifGraphBuilder.cpp
         include/TabuSearchMotif.h
-        source/TabuSearchMotif.cpp)
+        source/TabuSearchMotif.cpp
+        include/Menu.h
+        source/Menu.cpp
+        include/EnhancedMotif.h
+        source/EnhancedMotif.cpp
+)

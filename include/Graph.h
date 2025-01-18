@@ -4,36 +4,34 @@
 #include <vector>
 #include <string>
 
-// Metadane wierzchołka dla problemu motywu
 struct VertexData {
-    int sequenceIndex;   // Indeks sekwencji, do której należy k-mer
-    int position;        // Pozycja w sekwencji
-    std::string kmer;    // Sam k-mer
+    int sequenceIndex;  // Numer sekwencji
+    int position;       // Pozycja w oryginalnej sekwencji
+    std::string kmer;   // Tekst k-mera
 };
 
 class Graph {
 public:
     int n; // liczba wierzchołków
-
-    // Macierz sąsiedztwa: adj[u][v] = true jeśli jest krawędź (u,v)
     std::vector<std::vector<bool>> adj;
-
-    // Dodatkowe informacje o wierzchołkach, przydatne w motif-finding
     std::vector<VertexData> vertexInfo;
 
-    // Konstruktor - tworzy pusty graf na n wierzchołkach
     Graph(int n_);
 
-    // Dodaje krawędź nieskierowaną (u,v)
     void add_edge(int u, int v);
-
-    // Sprawdza, czy istnieje krawędź (u,v)
     bool is_edge(int u, int v) const;
 
-    // Funkcja pomocnicza do budowania grafu motywu
-    // Sprawdza, czy dwa wierzchołki spełniają kryteria: ten sam k-mer,
-    // różne sekwencje, różnica pozycji ≤ positionMultiplier * k
-    static bool canConnect(const VertexData &a, const VertexData &b, int positionMultiplier);
+    // canConnect z uwzględnieniem limitu mismatch, etc.
+    static bool canConnect(const VertexData &a,
+                           const VertexData &b,
+                           int positionMultiplier,
+                           int allowedMismatches);
+
+private:
+    // Pomocnicza funkcja do porównywania k-merów z dozwoloną liczbą różnic
+    static bool isWithinMismatch(const std::string &s1,
+                                 const std::string &s2,
+                                 int maxMismatch);
 };
 
 #endif // GRAPH_H

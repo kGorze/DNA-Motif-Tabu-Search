@@ -2,7 +2,7 @@
 #include <algorithm>
 
 std::size_t SolutionHash::operator()(const Solution &S) const {
-    // Prosty hash polinomialny na wektor inClique
+    // Prosty hash polinomialny
     std::size_t h = 0;
     for (bool b : S.inClique) {
         h = h * 131 + (b ? 1 : 0);
@@ -15,53 +15,46 @@ bool SolutionEq::operator()(const Solution &A, const Solution &B) const {
 }
 
 TabuSearchBase::TabuSearchBase(const Graph &graph, int T1_sz, int T2_sz, int maxIter)
-    : G(graph), T1_size(T1_sz), T2_size(T2_sz), MaxIter(maxIter) {
+    : G(graph), T1_size(T1_sz), T2_size(T2_sz), MaxIter(maxIter)
+{
     bestFoundSize = 0;
     itersSinceImprovement = 0;
 }
 
 std::vector<int> TabuSearchBase::solutionVertices(const Solution &S) const {
-    std::vector<int> v;
+    std::vector<int> verts;
     for (int i = 0; i < (int)S.inClique.size(); i++) {
-        if (S.inClique[i]) {
-            v.push_back(i);
-        }
+        if (S.inClique[i]) verts.push_back(i);
     }
-    return v;
+    return verts;
 }
 
 std::vector<int> TabuSearchBase::computeC(const Solution &S) const {
-    // C(S) - wierzchołki spoza S będące sąsiadami wszystkich wierzchołków S
+    // C(S): wierzchołki spoza S, które są sąsiadami wszystkich wierzchołków S
     if (S.size == 0) {
         std::vector<int> allV(G.n);
-        for (int i = 0; i < G.n; i++) {
-            allV[i] = i;
-        }
+        for (int i = 0; i < G.n; i++) allV[i] = i;
         return allV;
     }
 
-    std::vector<int> Sverts = solutionVertices(S);
+    std::vector<int> inS = solutionVertices(S);
     std::vector<bool> can(G.n, true);
 
-    // wykluczamy wierzchołki, które są w S
-    for (int v : Sverts) {
-        can[v] = false;
+    for (int v : inS) {
+        can[v] = false; 
     }
 
-    // dla każdego wierzchołka w S - usuwamy z 'can' te, które nie są z nim połączone
-    for (int w : Sverts) {
-        for (int v = 0; v < G.n; v++) {
-            if (can[v] && !G.is_edge(w, v)) {
-                can[v] = false;
+    for (int v : inS) {
+        for (int x = 0; x < G.n; x++) {
+            if (can[x] && !G.is_edge(v,x)) {
+                can[x] = false;
             }
         }
     }
 
     std::vector<int> result;
-    for (int v = 0; v < G.n; v++) {
-        if (can[v]) {
-            result.push_back(v);
-        }
+    for (int x = 0; x < G.n; x++) {
+        if (can[x]) result.push_back(x);
     }
     return result;
 }
@@ -77,13 +70,12 @@ Solution TabuSearchBase::makeSolution(const std::vector<int> &verts) const {
 }
 
 int TabuSearchBase::upperBoundFromS(const Solution &S) const {
-    // Górne ograniczenie: |S| + |C(S)|
     return S.size + (int)computeC(S).size();
 }
 
 bool TabuSearchBase::isClique(const std::vector<int> &solVec) const {
     for (size_t i = 0; i < solVec.size(); i++) {
-        for (size_t j = i + 1; j < solVec.size(); j++) {
+        for (size_t j = i+1; j < solVec.size(); j++) {
             if (!G.is_edge(solVec[i], solVec[j])) return false;
         }
     }
@@ -101,7 +93,7 @@ void TabuSearchBase::updateBestIfNeeded(const Solution &S) {
 }
 
 void TabuSearchBase::updateTabuListAfterMove(const Solution &S, bool augmenting, int changedVertex) {
-    // Aktualizacja T1
+    // T1
     T1_list.push_back(S);
     T1_set.insert(S);
     if ((int)T1_list.size() > T1_size) {
@@ -109,7 +101,7 @@ void TabuSearchBase::updateTabuListAfterMove(const Solution &S, bool augmenting,
         T1_list.pop_front();
     }
 
-    // Jeśli ruch polegał na usunięciu wierzchołka z kliki:
+    // T2 - jeśli ruch to usunięcie
     if (!augmenting && changedVertex != -1) {
         T2_list.push_back(changedVertex);
         T2_set.insert(changedVertex);

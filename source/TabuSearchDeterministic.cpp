@@ -1,76 +1,72 @@
 #include "../include/TabuSearchDeterministic.h"
-#include <vector>
 #include <algorithm>
+#include <vector>
 
-// Heurystyka Johnsona do wygenerowania kliki startowej
+// Heurystyka Johnsona
 static Solution johnsonGreedyHeuristic(const Graph &G) {
     Solution S;
-    S.inClique.resize(G.n, false);
+    S.inClique.resize(G.n,false);
     S.size = 0;
 
-    while (true) {
-        // Wyznaczamy C(S)
+    while(true) {
+        // compute candidate set C(S)
+        std::vector<int> existing;
+        for (int v = 0; v < G.n; v++) {
+            if (S.inClique[v]) existing.push_back(v);
+        }
+
+        std::vector<bool> can(G.n, true);
+        for (int v : existing) can[v] = false;
+
         std::vector<int> C_S;
-        {
-            std::vector<int> existing;
-            for (int v = 0; v < G.n; v++)
-                if (S.inClique[v]) existing.push_back(v);
-
-            std::vector<bool> can(G.n, true);
-            for (int v : existing) can[v] = false;
-
-            for (int v = 0; v < G.n; v++) {
-                if (!S.inClique[v]) {
-                    bool allAdj = true;
-                    for (int w : existing) {
-                        if (!G.adj[w][v]) { allAdj = false; break; }
+        for (int v = 0; v < G.n; v++) {
+            if (!S.inClique[v]) {
+                bool allAdj = true;
+                for (int w : existing) {
+                    if (!G.adj[w][v]) {
+                        allAdj=false; 
+                        break;
                     }
-                    if (!allAdj) can[v] = false;
                 }
-            }
-            for (int v = 0; v < G.n; v++) {
-                if (can[v] && !S.inClique[v]) {
-                    C_S.push_back(v);
-                }
+                if (allAdj) C_S.push_back(v);
             }
         }
         if (C_S.empty()) break;
 
-        // Wybieramy wierzchołek z C(S) maksymalizujący |C(S')|
+        // pick vertex from C(S) that yields largest C(S')
         int bestVal = -1;
         int chosen = -1;
         for (int u : C_S) {
+            // hypothetical addition
             std::vector<bool> temp = S.inClique;
             temp[u] = true;
-            std::vector<int> newCliqueVerts;
+            std::vector<int> newClique;
             for (int i = 0; i < G.n; i++) {
-                if (temp[i]) newCliqueVerts.push_back(i);
+                if (temp[i]) newClique.push_back(i);
             }
-            // obliczamy C(S')
-            std::vector<bool> can(G.n, true);
-            for (int vv : newCliqueVerts) can[vv] = false;
-            for (int vv : newCliqueVerts) {
+            // compute C(S')
+            std::vector<bool> can2(G.n, true);
+            for (int vv : newClique) can2[vv] = false;
+            for (int vv : newClique) {
                 for (int x = 0; x < G.n; x++) {
-                    if (can[x] && !G.adj[vv][x]) {
-                        can[x] = false;
+                    if (can2[x] && !G.adj[vv][x]) {
+                        can2[x] = false;
                     }
                 }
             }
             int countC = 0;
             for (int x = 0; x < G.n; x++) {
-                if (can[x]) countC++;
+                if (can2[x]) countC++;
             }
             if (countC > bestVal) {
                 bestVal = countC;
                 chosen = u;
             }
         }
-
         if (chosen == -1) break;
-        S.inClique[chosen] = true;
+        S.inClique[chosen]=true;
         S.size++;
     }
-
     return S;
 }
 
@@ -98,14 +94,13 @@ Solution TabuSearchDeterministic::selectBestNeighbor(const Solution &S,
     bestNeighbor.size = -1;
 
     for (auto &Sprime : neighbors) {
-        // sprawdzenie tabu T1
+        // T1
         if (T1_set.find(Sprime) != T1_set.end()) {
             continue;
         }
         bool augmenting = (Sprime.size > S.size);
-
-        // jeśli augmenting, sprawdzamy T2
         if (augmenting) {
+            // znajdź wierzchołek dodany
             int addedV = -1;
             for (int i = 0; i < (int)Sprime.inClique.size(); i++) {
                 if (Sprime.inClique[i] && !S.inClique[i]) {
@@ -113,22 +108,20 @@ Solution TabuSearchDeterministic::selectBestNeighbor(const Solution &S,
                     break;
                 }
             }
-            // jeśli wierzchołek w T2 i nie poprawiamy bestFoundSize, pomijamy
             if (addedV != -1 && T2_set.find(addedV) != T2_set.end()) {
+                // jeśli nie poprawia bestFoundSize to tabu
                 if (Sprime.size <= bestFoundSize) {
                     continue;
                 }
             }
         }
-
-        // Kryterium wyboru sąsiada: maksymalizujemy |C(S')|
+        // tie-break: liczymy C(S')
         int val = (int)computeC(Sprime).size();
         if (val > bestVal) {
             bestVal = val;
             bestNeighbor = Sprime;
         }
     }
-
     return bestNeighbor;
 }
 
@@ -151,8 +144,8 @@ Solution TabuSearchDeterministic::run() {
         // N-(S)
         std::vector<Solution> N_minus;
         {
-            std::vector<int> Sverts = solutionVertices(S);
-            for (int v : Sverts) {
+            std::vector<int> sverts = solutionVertices(S);
+            for (int v : sverts) {
                 Solution Sprime = S;
                 Sprime.inClique[v] = false;
                 Sprime.size = S.size - 1;
@@ -160,21 +153,14 @@ Solution TabuSearchDeterministic::run() {
             }
         }
 
-        // Najpierw próbujemy augmentacji
+        // prefer augmenting
         Solution chosen = selectBestNeighbor(S, N_plus);
-
-        // Jeśli nie ma augmentacji, próbujemy usunięć
         if (chosen.size == -1) {
             chosen = selectBestNeighbor(S, N_minus);
         }
-
-        // Jeśli dalej nic, koniec
         if (chosen.size == -1) {
-            if (!N_minus.empty()) {
-                chosen = N_minus.front(); 
-            } else {
-                break;
-            }
+            // brak ruchu
+            break;
         }
 
         bool augmenting = (chosen.size > S.size);
@@ -199,6 +185,5 @@ Solution TabuSearchDeterministic::run() {
         updateBestIfNeeded(S);
         updateTabuListAfterMove(S, augmenting, changedVertex);
     }
-
     return bestSol;
 }
