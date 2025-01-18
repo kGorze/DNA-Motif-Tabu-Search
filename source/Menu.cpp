@@ -266,24 +266,51 @@ static void runTabuMotifSearch() {
         }
 
         // Sprawdzanie, czy znaleziony k-mer jest zbliżony do wstrzykniętego motywu
+        // Replace the existing analysis code at the end of runTabuMotifSearch() with:
+
+        // Sprawdzanie, czy znaleziony k-mer jest zbliżony do wstrzykniętego motywu
         if (!gCurrentMotif.empty()) {
-            std::cout << "\n[Analysis] Checking for artificially injected motif ("
-                      << gCurrentMotif << ")\n";
+            std::cout << "\n[Analysis] Comparing found k-mers with injected motif " 
+                      << gCurrentMotif << ":\n";
+    
+            // First print the injected motif as reference
+            std::cout << "Injected:     " << gCurrentMotif << "\n";
+    
+            // Store all kmers for alignment
+            std::vector<std::string> foundKmers;
+    
+            // Print comparison for each sequence
             for (int idx : chosen) {
                 const auto &vd = motifG.vertexInfo[idx];
-                if ((int)vd.kmer.size() == (int)gCurrentMotif.size()) {
+                std::string kmer = vd.kmer;
+                foundKmers.push_back(kmer);
+        
+                // Only compare if lengths match
+                if (kmer.size() == gCurrentMotif.size()) {
+                    std::cout << "Seq " << vd.sequenceIndex 
+                              << " (" << vd.position << "):   "
+                              << kmer << "  (diff=";
+            
+                    // Count and collect differences
                     int diff = 0;
-                    for (int i = 0; i < (int)gCurrentMotif.size(); i++) {
-                        if (vd.kmer[i] != gCurrentMotif[i]) {
+                    std::string diffDesc;
+                    for (size_t i = 0; i < gCurrentMotif.size(); i++) {
+                        if (kmer[i] != gCurrentMotif[i]) {
+                            if (!diffDesc.empty()) diffDesc += ", ";
+                            diffDesc += gCurrentMotif[i];
+                            diffDesc += "->";
+                            diffDesc += kmer[i];
                             diff++;
                         }
                     }
-                    if (diff <= mismatch) {
-                        std::cout << "   -> Found k-mer similar to injected motif in seq="
-                                  << vd.sequenceIndex
-                                  << " (position=" << vd.position << ", diff=" << diff << ")\n";
-                    }
+                    std::cout << diff << ": " << diffDesc << ")\n";
                 }
+            }
+    
+            // Print alignment of found k-mers
+            std::cout << "\nAlignment of found k-mers:\n";
+            for (const auto& kmer : foundKmers) {
+                std::cout << kmer << "\n";
             }
         }
     }
