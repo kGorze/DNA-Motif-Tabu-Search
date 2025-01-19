@@ -8,6 +8,7 @@ struct VertexData {
     int sequenceIndex;  // Numer sekwencji
     int position;       // Pozycja w oryginalnej sekwencji
     std::string kmer;   // Tekst k-mera
+    int quality;        // Średnia jakość k-meru
 };
 
 class Graph {

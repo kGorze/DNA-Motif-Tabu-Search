@@ -1,5 +1,6 @@
 #include "../include/Graph.h"
 #include <cmath>
+#include <stdexcept>
 
 static int countDifferences(const std::string &s1, const std::string &s2) {
     if (s1.size() != s2.size()) return 999999; // large => fail
