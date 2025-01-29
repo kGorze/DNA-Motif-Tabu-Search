@@ -14,7 +14,7 @@
 - [Testy i weryfikacja](#testy-i-weryfikacja)
 
 ## Wprowadzenie
-Niniejszy projekt zawiera implementację zaawansowanych technik wyszukiwania i analizy **motywów w sekwencjach DNA** przy wykorzystaniu podejścia **Tabu Search** (TS). Motyw DNA to krótki fragment (tzw. k-mer) pojawiający się w kilku sekwencjach DNA z pewną liczbą dopuszczalnych błędów (mismatchy). Celem algorytmu jest odnalezienie wspólnego fragmentu (lub grupy spójnych fragmentów) dla wybranego zbioru sekwencji.
+Niniejszy projekt zawiera implementację zaawansowanych technik wyszukiwania i analizy **motywów w sekwencjach DNA** przy wykorzystaniu podejścia **Tabu Search** (TS). Motyw DNA to krótki fragment (tzw. k-mer) pojawiający się w kilku sekwencjach DNA z pewną liczbą dopuszczalnych błędów (mismatchy). Celem algorytmu jest odnalezienie wspólnego fragmentu (lub grupy spójnych fragmentów) dla wybranego zbioru sekwencji. Zadanie 4 na labolatoria do prof. Kasprzak - Bioinformatyka 3 semestr, Algorytmy kombinatoryczne w bioinformatyce.
 
 W projekcie zaimplementowano zarówno **deterministyczne** (np. *TabuSearchDeterministic*) jak i **probabilistyczne** (np. *TabuSearchProbabilistic*) warianty metody TS, a także wyspecjalizowaną wersję do wykrywania motywów w sekwencjach biologicznych (*TabuSearchMotif*, *EnhancedTabuSearchMotif*).
 
