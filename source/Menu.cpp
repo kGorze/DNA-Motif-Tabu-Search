@@ -339,22 +339,47 @@ static void runTabuMotifSearch() {
     EnhancedTabuSearchMotif motifSearch(g, 20, 15, maxTabuIter, 5);
     Solution sol = motifSearch.run();
 
+    // Add detailed debugging output
+    std::cout << "\n=== TabuSearch Results ===\n";
     if (sol.size == 0) {
-        std::cout << "[Info] No valid motif solution found. Exiting search.\n";
+        std::cout << "[Info] No valid motif solution found. Try:\n"
+                  << "1. Lowering the quality threshold (try 15-20)\n"
+                  << "2. Increasing allowed mismatches\n"
+                  << "3. Decreasing the position multiplier\n";
         return;
     }
 
-    // Display results
+    // Display results with more detail
     std::cout << "[Info] Best motif solution found with size: " << sol.size << "\n\n";
+    std::cout << "Found motifs:\n";
+    std::map<std::string, std::vector<std::pair<int, int>>> motifGroups;
     
-    // Add detailed solution display
-    std::cout << "=== Found Motifs ===\n";
     for (int i = 0; i < g.n; i++) {
         if (sol.inClique[i]) {
             const auto& info = g.vertexInfo[i];
-            std::cout << "Sequence " << info.sequenceIndex + 1 
-                      << " (pos " << info.position << "): "
-                      << info.kmer << "\n";
+            motifGroups[info.kmer].push_back({info.sequenceIndex, info.position});
+        }
+    }
+
+    for (const auto& group : motifGroups) {
+        std::cout << "\nMotif: " << group.first << "\n";
+        for (const auto& pos : group.second) {
+            std::cout << "  Sequence " << pos.first + 1 
+                     << " at position " << pos.second << "\n";
+        }
+    }
+    
+    // Add quality score information
+    std::cout << "\nQuality scores for found motifs:\n";
+    for (const auto& group : motifGroups) {
+        std::cout << "Motif " << group.first << ":\n";
+        for (const auto& pos : group.second) {
+            const auto& seq = targetSequences->at(pos.first);
+            std::cout << "  Seq " << pos.first + 1 << ": ";
+            for (int i = 0; i < group.first.length(); i++) {
+                std::cout << seq.qualityScores[pos.second + i] << " ";
+            }
+            std::cout << "\n";
         }
     }
     std::cout << "\n";
@@ -894,81 +919,115 @@ static void saveCurrentTestInstanceToFile() {
 static void loadTestInstanceFromFile() {
     std::ifstream inFile("LOAD_INSTANCE.txt");
     if (!inFile) {
-        std::cerr << "Error: Could not open LOAD_INSTANCE.txt\n";
+        std::cerr << "[Error] Could not open LOAD_INSTANCE.txt\n";
         return;
     }
 
     gLoadedTestSequences.clear();
     gMotifPositions.clear();
 
-    std::string line;
-    int numSequences = 0;
-
-    // Read instance number
-    std::getline(inFile, line);
-    if (line.substr(0, 9) == "INSTANCE ") {
+    try {
+        std::string line;
+        
+        // Read instance number
+        if (!std::getline(inFile, line)) {
+            throw std::runtime_error("File is empty");
+        }
+        if (line.substr(0, 9) != "INSTANCE ") {
+            throw std::runtime_error("Invalid file format: Expected 'INSTANCE' line");
+        }
         gCurrentTestInstance = std::stoi(line.substr(9));
-    }
 
-    // Read motif
-    std::getline(inFile, line);
-    if (line.substr(0, 6) == "MOTIF ") {
+        // Read motif
+        if (!std::getline(inFile, line)) {
+            throw std::runtime_error("Unexpected end of file: Expected 'MOTIF' line");
+        }
+        if (line.substr(0, 6) != "MOTIF ") {
+            throw std::runtime_error("Invalid file format: Expected 'MOTIF' line");
+        }
         gCurrentMotif = line.substr(6);
-    }
 
-    // Read number of sequences
-    std::getline(inFile, line);
-    if (line.substr(0, 9) == "SEQUENCES ") {
-        numSequences = std::stoi(line.substr(10));
-    }
+        // Read number of sequences
+        if (!std::getline(inFile, line)) {
+            throw std::runtime_error("Unexpected end of file: Expected 'SEQUENCES' line");
+        }
+        if (line.substr(0, 10) != "SEQUENCES ") {
+            throw std::runtime_error("Invalid file format: Expected 'SEQUENCES' line");
+        }
+        int numSequences = std::stoi(line.substr(10));
 
-    // Read each sequence
-    while (std::getline(inFile, line)) {
-        if (line == "SEQ_START") {
-            DNASequence seq;
-            int motifPos = -1;
+        // Read each sequence
+        while (std::getline(inFile, line)) {
+            if (line == "SEQ_START") {
+                DNASequence seq;
+                int motifPos = -1;
 
-            while (std::getline(inFile, line) && line != "SEQ_END") {
-                std::istringstream iss(line);
-                std::string tag;
-                iss >> tag;
+                while (std::getline(inFile, line) && line != "SEQ_END") {
+                    std::istringstream iss(line);
+                    std::string tag;
+                    iss >> tag;
 
-                if (tag == "NAME") {
-                    std::getline(iss, seq.name);
-                    seq.name = seq.name.substr(1); // Remove leading space
-                }
-                else if (tag == "BASES") {
-                    std::string bases;
-                    std::getline(iss, bases);
-                    bases = bases.substr(1); // Remove leading space
-                    
-                    // Remove spaces around brackets before removing brackets
-                    bases.erase(std::remove(bases.begin(), bases.end(), ' '), bases.end());
-                    bases.erase(std::remove(bases.begin(), bases.end(), '['), bases.end());
-                    bases.erase(std::remove(bases.begin(), bases.end(), ']'), bases.end());
-                    seq.bases = bases;
-                }
-                else if (tag == "QUALITIES") {
-                    std::string qualStr;
-                    int quality;
-                    while (iss >> qualStr) {
-                        if (qualStr != "[" && qualStr != "]") {
-                            seq.qualityScores.push_back(std::stoi(qualStr));
+                    if (tag == "NAME") {
+                        std::getline(iss, seq.name);
+                        seq.name = seq.name.substr(1); // Remove leading space
+                    }
+                    else if (tag == "LENGTH") {
+                        continue; // Skip LENGTH tag
+                    }
+                    else if (tag == "BASES") {
+                        std::string bases;
+                        std::getline(iss, bases);
+                        bases = bases.substr(1); // Remove leading space
+                        bases.erase(std::remove(bases.begin(), bases.end(), ' '), bases.end());
+                        bases.erase(std::remove(bases.begin(), bases.end(), '['), bases.end());
+                        bases.erase(std::remove(bases.begin(), bases.end(), ']'), bases.end());
+                        seq.bases = bases;
+                    }
+                    else if (tag == "QUALITIES") {
+                        std::string qualLine;
+                        std::getline(iss, qualLine);
+                        std::istringstream qualStream(qualLine);
+                        std::string token;
+                        
+                        while (qualStream >> token) {
+                            if (token != "[" && token != "]") {
+                                try {
+                                    int quality = std::stoi(token);
+                                    seq.qualityScores.push_back(quality);
+                                } catch (const std::exception& e) {
+                                    continue; // Skip invalid tokens
+                                }
+                            }
+                        }
+                    }
+                    else if (tag == "MOTIF_POS") {
+                        iss >> motifPos;
+                        if (iss.fail()) {
+                            throw std::runtime_error("Invalid MOTIF_POS value");
                         }
                     }
                 }
-                else if (tag == "MOTIF_POS") {
-                    iss >> motifPos;
+
+                if (seq.bases.empty() || seq.qualityScores.empty() || motifPos == -1) {
+                    throw std::runtime_error("Incomplete sequence data");
                 }
+
+                gLoadedTestSequences.push_back(seq);
+                gMotifPositions.push_back(motifPos);
             }
-
-            gLoadedTestSequences.push_back(seq);
-            gMotifPositions.push_back(motifPos);
         }
-    }
 
-    inFile.close();
-    std::cout << "[Info] Successfully loaded " << gLoadedTestSequences.size() 
-              << " sequences from test instance " << gCurrentTestInstance 
-              << " with motif: " << gCurrentMotif << "\n";
+        if (gLoadedTestSequences.empty()) {
+            throw std::runtime_error("No sequences loaded");
+        }
+
+        std::cout << "[Info] Successfully loaded " << gLoadedTestSequences.size() 
+                  << " sequences from test instance " << gCurrentTestInstance 
+                  << " with motif: " << gCurrentMotif << "\n";
+
+    } catch (const std::exception& e) {
+        std::cerr << "[Error] Failed to load test instance: " << e.what() << "\n";
+        gLoadedTestSequences.clear();
+        gMotifPositions.clear();
+    }
 }
